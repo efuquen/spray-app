@@ -17,15 +17,21 @@ trait MetricsService extends HttpService{
   
   var metricsMap = Map[String,String]()
   
-  val metricsRoute = path("metrics" / Segment) { key =>
-    get {
-      metricsMap.get(key) match {
-        case Some(value) => complete(metricsMap(key))
-        case None        => reject()
-      }
-    } ~ (post & formField("value")) { value =>
-      metricsMap += key -> value
-      complete("ok")
-    }
+  def eventRoute(metricId: Long) = path("event" / LongNumber) { eventId => 
+    getMetrics(metricId, eventId, "event")
+  }
+  
+  def platformRoute(metricId: Long) = path("platform" / LongNumber) { platformId => 
+    getMetrics(metricId, platformId, "platform")
+  }
+  
+  def getMetrics(
+    metricId: Long, metricTypeId: Long, metricType: String
+  ) = (get & formField("dimension")) { dimension =>
+    complete(s"${metricId}:${metricType}:${metricTypeId}:${dimension}")
+  }
+  
+  val metricsRoute = pathPrefix("metric" / LongNumber) { metricId =>
+    eventRoute(metricId) ~ platformRoute(metricId)
   }
 }
